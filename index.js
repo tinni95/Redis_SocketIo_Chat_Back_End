@@ -2,7 +2,8 @@ const express = require('express'),
     io = require('socket.io')(),
     bodyParser = require('body-parser'),
     redis= require("./redisClient"),
-    config= require("./config");
+    config= require("./constants/config"),
+    authRoutes = require("./routes/auth");
     
 const app = express();
 
@@ -18,6 +19,9 @@ app.use((req, res, next) => { //seet up header for REST API
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   next();
 });
+
+//we define the routes
+app.use('/auth', authRoutes);
 
 function startApp(isSuccess) {
 	if (isSuccess) {

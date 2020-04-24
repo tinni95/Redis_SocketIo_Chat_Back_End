@@ -1,6 +1,8 @@
 const { validationResult } = require('express-validator/check');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const redis= require("../redisClient");
+const config= require("../constants/config");
 
 exports.signup = (req, res, next) => {
   const errors = validationResult(req);
@@ -16,15 +18,14 @@ exports.signup = (req, res, next) => {
   bcrypt
     .hash(password, 12)
     .then(hashedPw => {
-      const user = new User({
-        email: email,
-        password: hashedPw,
-        name: name
-      });
-      return user.save();
+      redis.createUser({
+        name,
+        email,
+        password:hashedPw
+      })
     })
     .then(result => {
-      res.status(201).json({ message: 'User created!', userId: result._id });
+      res.status(201).json({ message: 'User created!' }); //return response 201 (created)
     })
     .catch(err => {
       if (!err.statusCode) {
@@ -37,16 +38,18 @@ exports.signup = (req, res, next) => {
 exports.login = (req, res, next) => {
   const email = req.body.email;
   const password = req.body.password;
-  let loadedUser;
-  User.findOne({ email: email })
+  let loadedUserEmail, loadedUserPassword;
+  redis.getUserDetails(email)
     .then(user => {
-      if (!user) {
+      if (!user[0]) {
         const error = new Error('A user with this email could not be found.');
         error.statusCode = 401;
         throw error;
       }
-      loadedUser = user;
-      return bcrypt.compare(password, user.password);
+      loadedUserEmail = user[0];
+      loadedUserPassword = user[1];
+
+      return bcrypt.compare(password, loadedUserPassword);
     })
     .then(isEqual => {
       if (!isEqual) {
@@ -56,13 +59,12 @@ exports.login = (req, res, next) => {
       }
       const token = jwt.sign(
         {
-          email: loadedUser.email,
-          userId: loadedUser._id.toString()
+          email: loadedUserEmail
         },
-        'somesupersecretsecret',
+        config.jwt_secret,
         { expiresIn: '1h' }
       );
-      res.status(200).json({ token: token, userId: loadedUser._id.toString() });
+      res.status(200).json({ token: token});
     })
     .catch(err => {
       if (!err.statusCode) {
