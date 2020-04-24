@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const config = require("./constants/config")
+const config = require("../constants/config")
 
 module.exports = (req,res,next) => {
     const token = req.get('Authorization').split(' ')[1];
@@ -14,6 +14,11 @@ module.exports = (req,res,next) => {
     if(!decodedToken){
         const error = new Error('Not authenticated.');
         error.statusCode = 401;
+        throw error;
+    }
+    if(!decodedToken.isOperator){
+        const error = new Error('Access forbidden.');
+        error.statusCode = 403;
         throw error;
     }
     req.email = decodedToken.email;

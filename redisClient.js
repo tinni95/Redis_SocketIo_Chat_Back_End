@@ -47,3 +47,20 @@ exports.getUserDetails= function(email) {
 	});
 	return deffered.promise;
 }
+
+exports.getClients = function(startPos, endPos) {
+	var deffered = Q.defer();
+	redisClient.lrange(roomID, startPos, endPos, function(err, res) {
+		if (!err) {
+			var result = [];
+			// Loop through the list, parsing each item into an object
+			for (var msg in res)
+				result.push(JSON.parse(res[msg]));
+			result.push(roomID);
+			deffered.resolve(result)
+		} else {
+			deffered.reject(err);
+		}
+	});
+	return deffered.promise;
+}

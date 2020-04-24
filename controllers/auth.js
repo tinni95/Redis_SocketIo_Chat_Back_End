@@ -1,55 +1,24 @@
 const { validationResult } = require('express-validator/check');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const redis= require("../redisClient");
 const config= require("../constants/config");
 
-exports.signup = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    const error = new Error('Validation failed.');
-    error.statusCode = 422;
-    error.data = errors.array();
-    throw error;
-  }
-  const email = req.body.email;
-  const name = req.body.name;
-  const password = req.body.password;
-  bcrypt
-    .hash(password, 12)
-    .then(hashedPw => {
-      redis.createUser({
-        name,
-        email,
-        password:hashedPw
-      })
-    })
-    .then(result => {
-      res.status(201).json({ message: 'User created!' }); //return response 201 (created)
-    })
-    .catch(err => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
-    });
-};
+const Client = require('../models/client');
+const Operator = require('../models/operator');
 
-exports.login = (req, res, next) => {
+exports.loginClient = (req, res, next) => {
   const email = req.body.email;
   const password = req.body.password;
-  let loadedUserEmail, loadedUserPassword;
-  redis.getUserDetails(email)
+  let loadedUser;
+  Client.findOne({ email: email })
     .then(user => {
-      if (!user[0]) {
+      if (!user) {
         const error = new Error('A user with this email could not be found.');
         error.statusCode = 401;
         throw error;
       }
-      loadedUserEmail = user[0];
-      loadedUserPassword = user[1];
-
-      return bcrypt.compare(password, loadedUserPassword);
+      loadedUser = user;
+      return bcrypt.compare(password, user.password);
     })
     .then(isEqual => {
       if (!isEqual) {
@@ -59,12 +28,52 @@ exports.login = (req, res, next) => {
       }
       const token = jwt.sign(
         {
-          email: loadedUserEmail
+          email: loadedUser.email,
+          userId: loadedUser._id.toString()
         },
         config.jwt_secret,
         { expiresIn: '1h' }
       );
-      res.status(200).json({ token: token});
+      res.status(200).json({ token: token, userId: loadedUser._id.toString() });
+    })
+    .catch(err => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
+
+exports.loginOperator = (req, res, next) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  let loadedUser;
+  Operator.findOne({ email: email })
+    .then(user => {
+      if (!user) {
+        const error = new Error('An operator with this email could not be found.');
+        error.statusCode = 401;
+        throw error;
+      }
+      loadedUser = user;
+      return bcrypt.compare(password, user.password);
+    })
+    .then(isEqual => {
+      if (!isEqual) {
+        const error = new Error('Wrong password!');
+        error.statusCode = 401;
+        throw error;
+      }
+      const token = jwt.sign(
+        {
+          email: loadedUser.email,
+          isOperator:true,
+          userId: loadedUser._id.toString()
+        },
+        config.jwt_secret,
+        { expiresIn: '1h' }
+      );
+      res.status(200).json({ token: token, userId: loadedUser._id.toString() });
     })
     .catch(err => {
       if (!err.statusCode) {
