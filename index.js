@@ -47,5 +47,49 @@ function startApp(isSuccess) {
 }
 
 io.on('connection', (socket) => {
-  console.log('A socket is now open');
+  socket.emit("ping","pong");
+  socket.on('add client', function(data) {
+    redis.getMessages(data.roomId,0).then(history=>{
+      console.log(history)
+      socket.emit('chat history', {
+        history: history,
+      });
+      socket.emit('client joined', {
+        id:data.roomId
+      });
+    })
+
+  });
+
+  socket.on('add operator', function(data) {
+    redis.getMessages(data.roomId,0).then(history=>{
+      socket.emit('chat history', {
+        history: history,
+      });
+      socket.emit('client joined', {
+        id:data.roomId
+      });
+    })
+      socket.emit('operator joined', { //to notify clients and other operators that someone joined the chat
+        id:data.roomId
+      });
+  });
+  
+  //when we have a new message from client we emit new Message to all the sockets 
+	socket.on('chat message from client', function(data) {
+    redis.pushMessage(data);
+    console.log("message")
+    socket.emit("new Message", {
+      data
+    });
+  });
+
+  //when we have a new message from a operator we emit the new Message only to the client
+  socket.on('chat message from operator', function(data) {
+    redis.pushMessage(data);
+    socket.to(data.roomId).emit("new Message", {
+      data
+    });
+	});
+
 });

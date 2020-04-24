@@ -17,38 +17,13 @@ exports.ConnectToRedis = function(startApp) {
 	});
 }
 
-exports.createUser = async function(data) {
-	return redisClient.hmset(data.email, {
-		'name': data.name,
-		'password': data.password,
-	});
-}
-
-exports.getDetails = function(email) {
-	var deffered = Q.defer();
-	redisClient.hget(email, "name", function(err, result) {
-		if (!err) {
-			deffered.resolve(result)
-		} else {
-			deffered.reject(err);
-		}
-	});
-	return deffered.promise;
-}
-
-exports.getUserDetails= function(email) {
-	var deffered = Q.defer();
-	redisClient.hmget(email, ["name","password"], function(err, result) {
-		if (!err) {
-			deffered.resolve(result)
-		} else {
-			deffered.reject(err);
-		}
-	});
-	return deffered.promise;
-}
-
-exports.getClients = function(startPos, endPos) {
+exports.getMessages = function(roomID, startPos, endPos) {
+	if (endPos == undefined) {
+		if (startPos > -10 && startPos < 0)
+			endPos = -1;
+		else
+			endPos = startPos + 9
+	}
 	var deffered = Q.defer();
 	redisClient.lrange(roomID, startPos, endPos, function(err, res) {
 		if (!err) {
@@ -56,11 +31,30 @@ exports.getClients = function(startPos, endPos) {
 			// Loop through the list, parsing each item into an object
 			for (var msg in res)
 				result.push(JSON.parse(res[msg]));
-			result.push(roomID);
 			deffered.resolve(result)
 		} else {
 			deffered.reject(err);
 		}
 	});
 	return deffered.promise;
+}
+
+exports.getMsgLength = function(roomID) {
+	var deffered = Q.defer();
+	redisClient.llen(roomId, function(err, len) {
+		if (!err) {
+			deffered.resolve(len);
+		} else {
+			deffered.reject(err);
+		}
+	});
+	return deffered.promise;
+}
+
+exports.pushMessage = function(data) {
+	redisClient.lpush(data.roomId, JSON.stringify({
+		isAdmin: data.isAdmin,
+		message: data.message,
+		date: data.timestamp
+	}));
 }
