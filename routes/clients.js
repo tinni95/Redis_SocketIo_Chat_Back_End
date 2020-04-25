@@ -6,7 +6,8 @@ const clientsController = require('../controllers/clients');
 const router = express.Router();
 
 // GET /clients
-router.get('/', isAdminAuth,clientsController.getClients);
+// we use is adminAuth middleware, as only admin user can view clients
+router.get('/', isAdminAuth, clientsController.getClients);
 
 router.get('/:clientId', clientsController.getClient);
 

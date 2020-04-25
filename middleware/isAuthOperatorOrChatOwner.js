@@ -24,6 +24,11 @@ module.exports = (req,res,next) => {
         error.statusCode = 401;
         throw error;
     }
-    req.email = decodedToken.email;
+    if(!decodedToken.isOperator && !(decodedToken.userId === req.params.clientId)){
+        const error = new Error('Access forbidden.');
+        error.statusCode = 403;
+        throw error;
+    }
+    req.isOperator = decodedToken.isOperator || false;
     next();
 }

@@ -1,10 +1,10 @@
 const express = require('express'),
-    io = require('socket.io')(),
     bodyParser = require('body-parser'),
     redis= require("./redisClient"),
     config= require("./constants/config"),
     authRoutes = require("./routes/auth"),
     clientsRoutes = require("./routes/clients"),
+    chatRoutes = require("./routes/chat"),
     mongoose= require('mongoose');
     
 const app = express();
@@ -33,63 +33,21 @@ app.use((req, res, next) => { //seet up header for REST API
 //we define the routes
 app.use('/auth', authRoutes);
 app.use('/clients', clientsRoutes);
+app.use('/chat', chatRoutes);
 
 function startApp(isSuccess) {
 	if (isSuccess) {
-		var server=app.listen(config.web_port, function() {
+		const server=app.listen(config.web_port, function() {
 			console.log('Server started ' + config.web_port + ' at ' +
 				(new Date().toLocaleString().substr(0, 24)));
-		});
-    io.attach(server);
+    });
+    const io = require('./socket').init(server);
+    io.on('connection', (socket) => {
+      console.log("connected")
+    });
+    
 	} else {
 		console.log("Server failed to start.");
 	}
 }
 
-io.on('connection', (socket) => {
-  socket.emit("ping","pong");
-  socket.on('add client', function(data) {
-    redis.getMessages(data.roomId,0).then(history=>{
-      console.log(history)
-      socket.emit('chat history', {
-        history: history,
-      });
-      socket.emit('client joined', {
-        id:data.roomId
-      });
-    })
-
-  });
-
-  socket.on('add operator', function(data) {
-    redis.getMessages(data.roomId,0).then(history=>{
-      socket.emit('chat history', {
-        history: history,
-      });
-      socket.emit('client joined', {
-        id:data.roomId
-      });
-    })
-      socket.emit('operator joined', { //to notify clients and other operators that someone joined the chat
-        id:data.roomId
-      });
-  });
-  
-  //when we have a new message from client we emit new Message to all the sockets 
-	socket.on('chat message from client', function(data) {
-    redis.pushMessage(data);
-    console.log("message")
-    socket.emit("new Message", {
-      data
-    });
-  });
-
-  //when we have a new message from a operator we emit the new Message only to the client
-  socket.on('chat message from operator', function(data) {
-    redis.pushMessage(data);
-    socket.to(data.roomId).emit("new Message", {
-      data
-    });
-	});
-
-});

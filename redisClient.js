@@ -55,6 +55,6 @@ exports.pushMessage = function(data) {
 	redisClient.lpush(data.roomId, JSON.stringify({
 		isAdmin: data.isAdmin,
 		message: data.message,
-		date: data.timestamp
+		date: Date.now()
 	}));
 }
