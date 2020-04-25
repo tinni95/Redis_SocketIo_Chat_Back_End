@@ -1,13 +1,11 @@
 const express = require('express');
-const { body } = require('express-validator/check');
 
-const feedController = require('../controllers/feed');
+const chatController = require('../controllers/chat');
 
 const router = express.Router();
 
-// GET /clients
-router.get('/clients', feedController.getClients);
+// GET /chat
+router.get('/:clientId', isAuth, chatController.getChat);
 
-router.get('/client/:postId', feedController.getPost);
-
+// Post /chat
 module.exports = router;
