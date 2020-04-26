@@ -1,5 +1,5 @@
 let io;
-
+//this is used in order to enable access to the initialized socket anywhere in the application
 module.exports = {
     init : httpServer => {
         io= require('socket.io')(httpServer);
