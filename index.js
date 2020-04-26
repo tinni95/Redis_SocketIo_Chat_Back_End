@@ -12,6 +12,7 @@ const app = express();
 mongoose
   .connect(
     'mongodb+srv://tinni:Chisana95@cluster0-fqkl1.mongodb.net/test?retryWrites=true&w=majority'
+    ,{ useNewUrlParser: true, useUnifiedTopology: true }
   )
   .then(result => {
     redis.ConnectToRedis(startApp); //initiate redis, calling startApp if connection succeeds
@@ -20,7 +21,7 @@ mongoose
 
 
 app.use(bodyParser.json()); // application/json
-app.use((req, res, next) => { //seet up header for REST API
+app.use((req, res, next) => { //set up header for REST API
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader(
     'Access-Control-Allow-Methods',

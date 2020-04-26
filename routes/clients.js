@@ -1,5 +1,4 @@
 const express = require('express');
-const { body } = require('express-validator/check');
 const isAdminAuth = require("../middleware/isAuthOperator");
 const clientsController = require('../controllers/clients');
 
