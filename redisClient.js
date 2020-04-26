@@ -39,18 +39,6 @@ exports.getMessages = function(roomID, startPos, endPos) {
 	return deffered.promise;
 }
 
-exports.getMsgLength = function(roomID) {
-	var deffered = Q.defer();
-	redisClient.llen(roomId, function(err, len) {
-		if (!err) {
-			deffered.resolve(len);
-		} else {
-			deffered.reject(err);
-		}
-	});
-	return deffered.promise;
-}
-
 exports.pushMessage = function(data) {
 	var deffered = Q.defer();
 	redisClient.lpush(data.roomId, JSON.stringify({
