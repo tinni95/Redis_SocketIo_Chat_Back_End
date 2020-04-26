@@ -52,9 +52,17 @@ exports.getMsgLength = function(roomID) {
 }
 
 exports.pushMessage = function(data) {
+	var deffered = Q.defer();
 	redisClient.lpush(data.roomId, JSON.stringify({
 		isAdmin: data.isAdmin,
 		message: data.message,
-		date: Date.now()
-	}));
+		date: data.timestamp
+	}), function(err,response){
+		if (!err) {
+			deffered.resolve(response);
+		} else {
+			deffered.reject(err);
+		}
+	});
+	return deffered.promise;
 }

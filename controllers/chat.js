@@ -1,4 +1,5 @@
 const redis = require("../redisClient")
+const io = require("../socket")
 
 exports.getChat = (req, res, next) => {
   const clientId = req.params.clientId;
@@ -24,7 +25,28 @@ exports.postMessage = (req, res, next) => {
     const isAdmin = req.isOperator;
     const message = req.body.message;
     const roomId = req.params.clientId;
-    console.log(message)
-    redis.pushMessage({ roomId,isAdmin, message})
+    const timestamp = Date.now();
+    console.log("socket", {isAdmin,message,roomId,timestamp})
+    io.getIO().emit("new message",{
+      isAdmin,
+      message,
+      roomId,
+      timestamp
+    });
+    redis.pushMessage({ timestamp,roomId,isAdmin, message})
+    .then(len=>{
+      if (!len) {
+        const error = new Error('Could not post message.');
+        error.statusCode = 500;
+        throw error;
+      }
+      res.status(200).json({ message: 'message sent.' });
+    })
+    .catch(err => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
   };
   
