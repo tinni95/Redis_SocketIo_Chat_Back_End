@@ -38,7 +38,7 @@ exports.getClient = (req, res, next) => {
         error.statusCode = 404;
         throw error;
       }
-      res.status(200).json({ message: 'Client fetched.', post: post });
+      res.status(200).json({ message: 'Client fetched.', client: client });
     })
     .catch(err => {
       if (!err.statusCode) {
