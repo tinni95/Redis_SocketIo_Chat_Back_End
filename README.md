@@ -28,6 +28,17 @@ or
 yarn start
 ```
 
+test operator user login:
+email: joe@whatwapp.com
+password: password
 
 
+test client user login:
+email: bilbo@gmail.com
+password: password
+
+user seeds are found in seed.js, seed can be eventually re-run with 
+```
+node seed.js
+```
 
